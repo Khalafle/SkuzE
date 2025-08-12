@@ -1,6 +1,15 @@
 <?php
 require 'includes/auth.php';
-$config = require 'config.php';
+
+// Load Stripe secret from config file if present or fallback to environment variable
+$stripeSecret = null;
+$configPath = __DIR__ . '/config.php';
+if (file_exists($configPath)) {
+  $config = require $configPath;
+  $stripeSecret = $config['stripe_secret'] ?? null;
+} else {
+  $stripeSecret = getenv('STRIPE_SECRET');
+}
 
 // Load Stripe dependencies if available
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
@@ -9,11 +18,11 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
   die('Stripe dependencies missing.');
 }
 
-if (empty($config['stripe_secret'])) {
+if (empty($stripeSecret)) {
   die('Stripe API key not configured.');
 }
 
-\Stripe\Stripe::setApiKey($config['stripe_secret']);
+\Stripe\Stripe::setApiKey($stripeSecret);
 
 $session = \Stripe\Checkout\Session::create([
   'payment_method_types' => ['card'],

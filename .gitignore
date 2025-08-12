@@ -1,0 +1,5 @@
+# Local configuration file containing secrets; copy config.example.php to SkuzESite/config.php and customize.
+SkuzESite/config.php
+
+# Runtime error logs
+SkuzESite/error_log

@@ -2,14 +2,24 @@
 /**
  * Centralised database connection.
  *
- * Loads credentials from the application config and exposes an open
- * `mysqli` instance via `$conn` for the rest of the application to use.
+ * Loads credentials from the application config or environment
+ * and exposes an open `mysqli` instance via `$conn`.
  */
 
-// Load configuration; `../config.php` is relative to this file.
-$config = require __DIR__ . '/../config.php';
+// Attempt to load configuration file (../config.php relative to this file)
+$configPath = __DIR__ . '/../config.php';
+if (file_exists($configPath)) {
+    $config = require $configPath;
+} else {
+    $config = [
+        'db_host' => getenv('DB_HOST'),
+        'db_user' => getenv('DB_USER'),
+        'db_pass' => getenv('DB_PASS'),
+        'db_name' => getenv('DB_NAME'),
+    ];
+}
 
-// Create the database connection using standard config keys.
+// Create the database connection using config values.
 $conn = new mysqli(
     $config['db_host'],
     $config['db_user'],
