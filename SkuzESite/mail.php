@@ -2,8 +2,21 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require_once __DIR__ . '/../vendor/autoload.php';
-$config = require __DIR__ . '/config.php';
+// Composer autoload (expect vendor directory in project root)
+require_once __DIR__ . '/vendor/autoload.php';
+
+// Load SMTP settings from config file if present or environment variables
+$configPath = __DIR__ . '/config.php';
+if (file_exists($configPath)) {
+  $config = require $configPath;
+} else {
+  $config = [
+    'smtp_host' => getenv('SMTP_HOST'),
+    'smtp_user' => getenv('SMTP_USER'),
+    'smtp_pass' => getenv('SMTP_PASS'),
+    'smtp_port' => getenv('SMTP_PORT') ?: 465,
+  ];
+}
 
 function send_email($to, $subject, $body) {
   global $config;
