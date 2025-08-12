@@ -4,10 +4,17 @@ require 'includes/db.php';
 // Mail helper lives in the project root
 require 'mail.php';
 
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $user = trim($_POST['username']);
-  $email = trim($_POST['email']);
-  $pass = $_POST['password'];
+  if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
+    $error = "Invalid CSRF token.";
+  } else {
+    $user = trim($_POST['username']);
+    $email = trim($_POST['email']);
+    $pass = $_POST['password'];
 
   if (strlen($user) < 3 || strlen($pass) < 6) {
     $error = "Username must be 3+ chars and password 6+.";
@@ -38,8 +45,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       $success = "Check your email to verify your account.";
     }
+    }
   }
 }
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -52,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <?php if (!empty($error)) echo "<p style='color:red;'>$error</p>"; ?>
   <?php if (!empty($success)) echo "<p style='color:green;'>$success</p>"; ?>
   <form method="post">
+    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>">
     <input type="text" name="username" required placeholder="Username">
     <input type="email" name="email" required placeholder="Email">
     <input type="password" name="password" required placeholder="Password">

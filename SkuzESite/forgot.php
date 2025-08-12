@@ -1,10 +1,18 @@
 <?php
+session_start();
 require 'includes/db.php';
 // Mail helper lives in the project root
 require 'mail.php';
 
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $email = trim($_POST['email']);
+  if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
+    $msg = "Invalid CSRF token.";
+  } else {
+    $email = trim($_POST['email']);
 
   $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
   $stmt->bind_param("s", $email);
@@ -27,8 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     send_email($email, "SkuzE Password Reset", $body);
 
     $msg = "Reset link sent if account exists.";
-  } else {
-    $msg = "Reset link sent if account exists.";
+    } else {
+      $msg = "Reset link sent if account exists.";
+    }
   }
 }
 ?>
@@ -39,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <h2>Forgot Password</h2>
   <?php if (!empty($msg)) echo "<p>$msg</p>"; ?>
   <form method="post">
+    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>">
     <input type="email" name="email" required placeholder="Your email">
     <button type="submit">Send Reset Link</button>
   </form>

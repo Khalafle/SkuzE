@@ -1,5 +1,10 @@
 <?php
+session_start();
 require 'includes/db.php';
+
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 $token = $_GET['token'] ?? '';
 $valid = false;
@@ -24,22 +29,29 @@ if ($token) {
   }
 
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid) {
-    $newpass = $_POST['new_password'];
-    $confirm = $_POST['confirm_password'];
-
-    if ($newpass !== $confirm) {
-      $error = "Passwords do not match.";
-    } elseif (strlen($newpass) < 6) {
-      $error = "Password too short.";
+    if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
+      $error = "Invalid CSRF token.";
     } else {
-      $hash = password_hash($newpass, PASSWORD_DEFAULT);
-      $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
-      $stmt->bind_param("si", $hash, $uid);
-      $stmt->execute();
+      $newpass = $_POST['new_password'];
+      $confirm = $_POST['confirm_password'];
 
-      $conn->query("DELETE FROM tokens WHERE token = '$token'");
-      $msg = "Password reset. You may now <a href='login.php'>login</a>.";
-      $valid = false;
+      if ($newpass !== $confirm) {
+        $error = "Passwords do not match.";
+      } elseif (strlen($newpass) < 6) {
+        $error = "Password too short.";
+      } else {
+        $hash = password_hash($newpass, PASSWORD_DEFAULT);
+        $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $stmt->bind_param("si", $hash, $uid);
+        $stmt->execute();
+
+        $stmt = $conn->prepare("DELETE FROM tokens WHERE token = ?");
+        $stmt->bind_param("s", $token);
+        $stmt->execute();
+
+        $msg = "Password reset. You may now <a href='login.php'>login</a>.";
+        $valid = false;
+      }
     }
   }
 } else {
@@ -56,6 +68,7 @@ if ($token) {
 
   <?php if ($valid): ?>
   <form method="post">
+    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>">
     <input type="password" name="new_password" required placeholder="New password">
     <input type="password" name="confirm_password" required placeholder="Confirm new password">
     <button type="submit">Reset Password</button>

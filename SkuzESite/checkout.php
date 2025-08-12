@@ -1,8 +1,19 @@
 <?php
 require 'includes/auth.php';
-require_once 'vendor/autoload.php';
+$config = require 'config.php';
 
-\Stripe\Stripe::setApiKey('pk_live_51RjC8XL0dDqg6vO16qQ75R4HBfedJxO75HPP10boFERBBARlvLrMIazpcZpXEl17zIJGX81YTYoq4Al13PdsEpb1002nrKy5aQ');
+// Load Stripe dependencies if available
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+  require_once __DIR__ . '/vendor/autoload.php';
+} else {
+  die('Stripe dependencies missing.');
+}
+
+if (empty($config['stripe_secret'])) {
+  die('Stripe API key not configured.');
+}
+
+\Stripe\Stripe::setApiKey($config['stripe_secret']);
 
 $session = \Stripe\Checkout\Session::create([
   'payment_method_types' => ['card'],
