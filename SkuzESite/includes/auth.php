@@ -1,6 +1,7 @@
 <?php
 session_start();
-require_once 'db.php';
+// Ensure the database connection file is loaded relative to this directory
+require_once __DIR__ . '/db.php';
 
 if (!isset($_SESSION['user_id'])) {
   header("Location: login.php");

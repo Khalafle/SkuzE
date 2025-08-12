@@ -1,6 +1,7 @@
 <?php
 require 'includes/db.php';
-require 'includes/mail.php';
+// Mail helper lives in the project root
+require 'mail.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = trim($_POST['email']);
